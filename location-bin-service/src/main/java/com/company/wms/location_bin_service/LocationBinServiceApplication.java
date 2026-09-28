@@ -9,5 +9,4 @@ public class LocationBinServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(LocationBinServiceApplication.class, args);
 	}
-
 }
