@@ -10,9 +10,14 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+        private static final Logger log =
+        LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(
@@ -76,9 +81,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(
-            Exception exception,
-            HttpServletRequest request) {
+        public ResponseEntity<ErrorResponse> handleGenericException(
+                Exception exception,
+                HttpServletRequest request) {
+
+        log.error("Unexpected error while processing request", exception);
 
         ErrorResponse response = new ErrorResponse(
                 LocalDateTime.now(),
@@ -91,5 +98,5 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(response);
-    }
+        }
 }

@@ -1,22 +1,22 @@
 package com.company.wms.inbound_service.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.company.wms.inbound_service.domain.GoodsReceipt;
 import com.company.wms.inbound_service.domain.GoodsReceiptLine;
 import com.company.wms.inbound_service.domain.GoodsReceiptLineStatus;
 import com.company.wms.inbound_service.domain.GoodsReceiptStatus;
 import com.company.wms.inbound_service.dto.CreateGoodsReceiptRequest;
 import com.company.wms.inbound_service.dto.GoodsReceiptResponse;
-import com.company.wms.inbound_service.exception.DuplicateResourceException;
 import com.company.wms.inbound_service.exception.ResourceNotFoundException;
 import com.company.wms.inbound_service.mapper.GoodsReceiptMapper;
 import com.company.wms.inbound_service.repository.GoodsReceiptLineRepository;
 import com.company.wms.inbound_service.repository.GoodsReceiptRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 public class GoodsReceiptService {
@@ -24,15 +24,17 @@ public class GoodsReceiptService {
     private final GoodsReceiptRepository goodsReceiptRepository;
     private final GoodsReceiptLineRepository goodsReceiptLineRepository;
     private final GoodsReceiptMapper goodsReceiptMapper;
+    private final OutboxEventService outboxEventService;
 
     public GoodsReceiptService(
             GoodsReceiptRepository goodsReceiptRepository,
             GoodsReceiptLineRepository goodsReceiptLineRepository,
-            GoodsReceiptMapper goodsReceiptMapper) {
+            GoodsReceiptMapper goodsReceiptMapper, OutboxEventService outboxEventService) {
 
         this.goodsReceiptRepository = goodsReceiptRepository;
         this.goodsReceiptLineRepository = goodsReceiptLineRepository;
         this.goodsReceiptMapper = goodsReceiptMapper;
+        this.outboxEventService = outboxEventService;
     }
 
     @Transactional
@@ -86,6 +88,8 @@ public class GoodsReceiptService {
 
         List<GoodsReceiptLine> savedLines =
                 goodsReceiptLineRepository.saveAll(lines);
+
+        outboxEventService.createGoodsReceivedEvent(savedReceipt, savedLines);
 
         // 5. Return complete receipt
         return goodsReceiptMapper.toResponse(
