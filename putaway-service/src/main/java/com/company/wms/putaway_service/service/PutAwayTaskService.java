@@ -83,20 +83,17 @@ public class PutAwayTaskService {
         putAwayReceiptLineRepository.save(receiptLine);
 
         PutAwayTask task =
-                putAwayTaskMapper.toEntity(request);
+        putAwayTaskMapper.toEntity(request);
 
         task.setTaskNumber(generateTaskNumber());
 
         task.setCreatedAt(LocalDateTime.now());
 
-        task.setStatus(PutAwayTaskStatus.COMPLETED);
-        task.setCompletedAt(LocalDateTime.now());
+        task.setStatus(PutAwayTaskStatus.OPEN);
+        task.setCompletedAt(null);
 
         PutAwayTask savedTask =
                 putAwayTaskRepository.save(task);
-
-        outboxEventService.createPutAwayCompletedEvent(
-                savedTask);
 
         return putAwayTaskMapper.toResponse(savedTask);
   }
@@ -114,7 +111,7 @@ public class PutAwayTaskService {
     }
 
     @Transactional
-    public PutAwayTaskResponse completePutAwayTask(UUID id) {
+        public PutAwayTaskResponse completePutAwayTask(UUID id) {
 
         PutAwayTask task =
                 putAwayTaskRepository.findById(id)
@@ -123,24 +120,25 @@ public class PutAwayTaskService {
                                         "Put-Away task not found with id: " + id));
 
         if (task.getStatus() == PutAwayTaskStatus.COMPLETED) {
-            throw new InvalidOperationException(
-                    "Put-Away task is already completed");
+                throw new InvalidOperationException(
+                        "Put-Away task is already completed");
         }
 
         if (task.getStatus() == PutAwayTaskStatus.CANCELLED) {
-            throw new InvalidOperationException(
-                    "Cancelled Put-Away task cannot be completed");
+                throw new InvalidOperationException(
+                        "Cancelled Put-Away task cannot be completed");
         }
 
         task.setStatus(PutAwayTaskStatus.COMPLETED);
-
         task.setCompletedAt(LocalDateTime.now());
 
         PutAwayTask savedTask =
                 putAwayTaskRepository.save(task);
 
+        outboxEventService.createPutAwayCompletedEvent(savedTask);
+
         return putAwayTaskMapper.toResponse(savedTask);
-    }
+        }
 
     @Transactional
         public PutAwayTaskResponse createPutAwayTaskFromGoodsReceived(

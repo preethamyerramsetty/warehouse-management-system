@@ -35,7 +35,7 @@ public class GoodsReceivedConsumer {
 
     @KafkaListener(
             topics = "goods-received",
-            groupId = "putaway-service"
+            groupId = "putaway-service-test"
     )
     @Transactional
     public void consume(String message) {
