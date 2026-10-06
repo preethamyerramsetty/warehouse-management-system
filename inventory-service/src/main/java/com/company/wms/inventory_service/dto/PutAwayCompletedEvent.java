@@ -1,4 +1,4 @@
-package com.company.wms.putaway_service.dto;
+package com.company.wms.inventory_service.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -7,7 +7,6 @@ import java.util.UUID;
 public class PutAwayCompletedEvent {
 
     private UUID eventId;
-    private UUID warehouseId;
     private String eventType;
     private Integer eventVersion;
     private LocalDateTime occurredAt;
@@ -19,6 +18,7 @@ public class PutAwayCompletedEvent {
     private UUID goodsReceiptLineId;
     private UUID skuId;
     private BigDecimal quantity;
+    private UUID warehouseId;
     private UUID targetBinId;
 
     public UUID getEventId() {
@@ -27,14 +27,6 @@ public class PutAwayCompletedEvent {
 
     public void setEventId(UUID eventId) {
         this.eventId = eventId;
-    }
-
-    public UUID getWarehouseId() {
-        return warehouseId;
-    }
-
-    public void setWarehouseId(UUID warehouseId) {
-        this.warehouseId = warehouseId;
     }
 
     public String getEventType() {
@@ -115,6 +107,14 @@ public class PutAwayCompletedEvent {
 
     public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
+    }
+
+    public UUID getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(UUID warehouseId) {
+        this.warehouseId = warehouseId;
     }
 
     public UUID getTargetBinId() {

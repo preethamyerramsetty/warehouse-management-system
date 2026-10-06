@@ -1,9 +1,10 @@
 package com.company.wms.putaway_service.mapper;
 
+import org.springframework.stereotype.Component;
+
 import com.company.wms.putaway_service.domain.PutAwayTask;
 import com.company.wms.putaway_service.dto.CreatePutAwayTaskRequest;
 import com.company.wms.putaway_service.dto.PutAwayTaskResponse;
-import org.springframework.stereotype.Component;
 
 @Component
 public class PutAwayTaskMapper {
@@ -18,6 +19,8 @@ public class PutAwayTaskMapper {
 
         task.setSkuId(
                 request.getSkuId());
+
+        task.setWarehouseId(request.getWarehouseId());
 
         task.setQuantity(
                 request.getQuantity());
@@ -38,6 +41,7 @@ public class PutAwayTaskMapper {
                 new PutAwayTaskResponse();
 
         response.setId(task.getId());
+        response.setWarehouseId(task.getWarehouseId());
         response.setTaskNumber(task.getTaskNumber());
         response.setGoodsReceiptLineId(
                 task.getGoodsReceiptLineId());

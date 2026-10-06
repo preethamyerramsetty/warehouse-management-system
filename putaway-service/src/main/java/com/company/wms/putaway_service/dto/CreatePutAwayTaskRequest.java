@@ -15,6 +15,9 @@ public class CreatePutAwayTaskRequest {
     private UUID skuId;
 
     @NotNull
+    private UUID warehouseId;
+
+    @NotNull
     @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal quantity;
 
@@ -40,6 +43,14 @@ public class CreatePutAwayTaskRequest {
 
     public void setSkuId(UUID skuId) {
         this.skuId = skuId;
+    }
+
+    public UUID getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(UUID warehouseId) {
+        this.warehouseId = warehouseId;
     }
 
     public BigDecimal getQuantity() {

@@ -42,6 +42,7 @@ public class OutboxEventService {
                     new PutAwayCompletedEvent();
 
             event.setEventId(eventId);
+            event.setWarehouseId(task.getWarehouseId());
             event.setEventType("PutAwayCompleted");
             event.setEventVersion(1);
             event.setOccurredAt(now);

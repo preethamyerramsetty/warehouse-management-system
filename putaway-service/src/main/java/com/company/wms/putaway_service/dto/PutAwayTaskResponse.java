@@ -9,6 +9,7 @@ import com.company.wms.putaway_service.domain.PutAwayTaskStatus;
 public class PutAwayTaskResponse {
 
     private UUID id;
+    private UUID warehouseId;
     private String taskNumber;
     private UUID goodsReceiptLineId;
     private UUID skuId;
@@ -28,6 +29,14 @@ public class PutAwayTaskResponse {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public UUID getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(UUID warehouseId) {
+        this.warehouseId = warehouseId;
     }
 
     public String getTaskNumber() {

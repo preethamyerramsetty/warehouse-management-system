@@ -144,13 +144,15 @@ public class PutAwayTaskService {
         public PutAwayTaskResponse createPutAwayTaskFromGoodsReceived(
                 UUID goodsReceiptLineId,
                 UUID skuId,
-                java.math.BigDecimal quantity) {
+                BigDecimal quantity,
+                UUID warehouseId) {
 
         PutAwayTask task = new PutAwayTask();
 
         task.setGoodsReceiptLineId(goodsReceiptLineId);
         task.setSkuId(skuId);
         task.setQuantity(quantity);
+        task.setWarehouseId(warehouseId);
 
         /*
         * Target bin selection will be implemented later.

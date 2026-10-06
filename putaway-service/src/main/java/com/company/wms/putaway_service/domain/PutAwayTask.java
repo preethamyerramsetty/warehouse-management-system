@@ -1,10 +1,18 @@
 package com.company.wms.putaway_service.domain;
 
-import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
@@ -21,6 +29,9 @@ public class PutAwayTask {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(name = "warehouse_id", nullable = false)
+    private UUID warehouseId;
 
     @Column(name = "task_number", nullable = false, length = 50)
     private String taskNumber;
@@ -59,6 +70,14 @@ public class PutAwayTask {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public UUID getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(UUID warehouseId) {
+        this.warehouseId = warehouseId;
     }
 
     public String getTaskNumber() {
