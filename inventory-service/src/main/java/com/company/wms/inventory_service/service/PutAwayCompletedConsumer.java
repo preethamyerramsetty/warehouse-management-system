@@ -1,9 +1,10 @@
 package com.company.wms.inventory_service.service;
 
-import com.company.wms.inventory_service.dto.PutAwayCompletedEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+
+import com.company.wms.inventory_service.dto.PutAwayCompletedEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class PutAwayCompletedConsumer {
@@ -32,9 +33,11 @@ public class PutAwayCompletedConsumer {
                             message,
                             PutAwayCompletedEvent.class
                     );
+                    
+            throw new RuntimeException("TEST KAFKA FAILURE");
 
-            inventoryProcessingService
-                    .processPutAwayCompleted(event);
+        //     inventoryProcessingService
+        //             .processPutAwayCompleted(event);
 
         } catch (Exception e) {
 
