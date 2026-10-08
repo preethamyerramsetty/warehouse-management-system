@@ -81,6 +81,7 @@ public class OutboxEventService {
                     OutboxEventStatus.PENDING);
             outboxEvent.setRetryCount(0);
             outboxEvent.setCreatedAt(now);
+            outboxEvent.setNextAttemptAt(LocalDateTime.now());
 
             outboxEventRepository.save(
                     outboxEvent);

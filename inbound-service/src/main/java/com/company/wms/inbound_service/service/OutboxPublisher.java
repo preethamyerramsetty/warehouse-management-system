@@ -1,16 +1,19 @@
 package com.company.wms.inbound_service.service;
 
-import com.company.wms.inbound_service.domain.OutboxEvent;
-import com.company.wms.inbound_service.domain.OutboxEventStatus;
-import com.company.wms.inbound_service.repository.OutboxEventRepository;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import com.company.wms.inbound_service.domain.OutboxEvent;
+import com.company.wms.inbound_service.domain.OutboxEventStatus;
+import com.company.wms.inbound_service.repository.OutboxEventRepository;
+
 @Service
 public class OutboxPublisher {
+
+    private static final int MAX_RETRIES = 5;
 
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaEventPublisher kafkaEventPublisher;
@@ -26,10 +29,14 @@ public class OutboxPublisher {
     @Scheduled(fixedDelay = 5000)
     public void publishPendingEvents() {
 
+        LocalDateTime now = LocalDateTime.now();
+
         List<OutboxEvent> events =
                 outboxEventRepository
-                        .findByStatusOrderByCreatedAtAsc(
-                                OutboxEventStatus.PENDING);
+                        .findByStatusAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+                                OutboxEventStatus.PENDING,
+                                now
+                        );
 
         for (OutboxEvent event : events) {
 
@@ -40,22 +47,47 @@ public class OutboxPublisher {
                         .join();
 
                 event.setStatus(
-                        OutboxEventStatus.PUBLISHED);
+                        OutboxEventStatus.PUBLISHED
+                );
 
                 event.setPublishedAt(
-                        LocalDateTime.now());
+                        LocalDateTime.now()
+                );
 
                 event.setLastError(null);
+                event.setNextAttemptAt(null);
 
                 outboxEventRepository.save(event);
 
             } catch (Exception exception) {
 
-                event.setRetryCount(
-                        event.getRetryCount() + 1);
+                int retryCount =
+                        event.getRetryCount() + 1;
+
+                event.setRetryCount(retryCount);
 
                 event.setLastError(
-                        exception.getMessage());
+                        exception.getMessage()
+                );
+
+                if (retryCount >= MAX_RETRIES) {
+
+                    event.setStatus(
+                            OutboxEventStatus.FAILED
+                    );
+
+                    event.setNextAttemptAt(null);
+
+                } else {
+
+                    long delaySeconds =
+                            (long) Math.pow(2, retryCount);
+
+                    event.setNextAttemptAt(
+                            LocalDateTime.now()
+                                    .plusSeconds(delaySeconds)
+                    );
+                }
 
                 outboxEventRepository.save(event);
             }

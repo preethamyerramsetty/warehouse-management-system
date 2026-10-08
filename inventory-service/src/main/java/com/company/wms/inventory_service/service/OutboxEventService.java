@@ -1,5 +1,10 @@
 package com.company.wms.inventory_service.service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+
 import com.company.wms.inventory_service.domain.InventoryBalance;
 import com.company.wms.inventory_service.domain.OutboxEvent;
 import com.company.wms.inventory_service.domain.OutboxEventStatus;
@@ -8,10 +13,6 @@ import com.company.wms.inventory_service.dto.PutAwayCompletedEvent;
 import com.company.wms.inventory_service.repository.OutboxEventRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 public class OutboxEventService {
@@ -76,6 +77,7 @@ public class OutboxEventService {
             outboxEvent.setStatus(OutboxEventStatus.PENDING);
             outboxEvent.setRetryCount(0);
             outboxEvent.setCreatedAt(LocalDateTime.now());
+            outboxEvent.setNextAttemptAt(LocalDateTime.now());
 
             outboxEventRepository.save(outboxEvent);
 

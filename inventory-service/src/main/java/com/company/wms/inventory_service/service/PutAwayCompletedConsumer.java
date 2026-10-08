@@ -33,11 +33,9 @@ public class PutAwayCompletedConsumer {
                             message,
                             PutAwayCompletedEvent.class
                     );
-                    
-            throw new RuntimeException("TEST KAFKA FAILURE");
 
-        //     inventoryProcessingService
-        //             .processPutAwayCompleted(event);
+            inventoryProcessingService
+                    .processPutAwayCompleted(event);
 
         } catch (Exception e) {
 
