@@ -1,5 +1,6 @@
 package com.company.wms.inventory_service.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,4 +16,11 @@ public interface InventoryBalanceRepository
             UUID warehouseId,
             UUID binId
     );
+
+    List<InventoryBalance> findBySkuIdAndWarehouseId(
+                UUID skuId,
+                UUID warehouseId
+        );
+
+    List<InventoryBalance> findByWarehouseId(UUID warehouseId);
 }
