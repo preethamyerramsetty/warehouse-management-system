@@ -23,4 +23,6 @@ public interface InventoryBalanceRepository
         );
 
     List<InventoryBalance> findByWarehouseId(UUID warehouseId);
+
+    List<InventoryBalance> findBySkuId(UUID skuId);
 }

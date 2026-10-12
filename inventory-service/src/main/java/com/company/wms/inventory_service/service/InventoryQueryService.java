@@ -110,4 +110,29 @@ public class InventoryQueryService {
                 })
                 .toList();
         }
+
+        @Transactional(readOnly = true)
+        public List<InventoryBalanceResponse> getInventoryBySku(UUID skuId) {
+
+        List<InventoryBalance> balances =
+                inventoryBalanceRepository.findBySkuId(skuId);
+
+        return balances.stream()
+                .map(balance -> {
+                        InventoryBalanceResponse response =
+                                new InventoryBalanceResponse();
+
+                        response.setSkuId(balance.getSkuId());
+                        response.setWarehouseId(balance.getWarehouseId());
+                        response.setBinId(balance.getBinId());
+                        response.setAvailableQuantity(
+                                balance.getAvailableQuantity());
+                        response.setReservedQuantity(
+                                balance.getReservedQuantity());
+                        response.setUpdatedAt(balance.getUpdatedAt());
+
+                        return response;
+                })
+                .toList();
+        }
 }

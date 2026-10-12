@@ -51,4 +51,11 @@ public class InventoryQueryController {
 
         return inventoryQueryService.getInventoryByWarehouse(warehouseId);
     }
+
+    @GetMapping("/{skuId}")
+    public List<InventoryBalanceResponse> getInventoryBySku(
+            @PathVariable UUID skuId) {
+
+        return inventoryQueryService.getInventoryBySku(skuId);
+    }
 }
