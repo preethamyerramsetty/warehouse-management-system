@@ -6,11 +6,15 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientResponseException;
 
+import com.company.wms.putaway_service.client.LocationBinClient;
 import com.company.wms.putaway_service.domain.PutAwayReceiptLine;
 import com.company.wms.putaway_service.domain.PutAwayTask;
 import com.company.wms.putaway_service.domain.PutAwayTaskStatus;
+import com.company.wms.putaway_service.dto.BinResponse;
 import com.company.wms.putaway_service.dto.CreatePutAwayTaskRequest;
+import com.company.wms.putaway_service.dto.LocationResponse;
 import com.company.wms.putaway_service.dto.PutAwayTaskResponse;
 import com.company.wms.putaway_service.exception.InvalidOperationException;
 import com.company.wms.putaway_service.exception.ResourceNotFoundException;
@@ -26,23 +30,30 @@ public class PutAwayTaskService {
     private final PutAwayTaskMapper putAwayTaskMapper;
     private final PutAwayReceiptLineRepository putAwayReceiptLineRepository;
     private final OutboxEventService outboxEventService;
+    private final LocationBinClient locationBinClient;
 
     public PutAwayTaskService(
-        PutAwayTaskRepository putAwayTaskRepository,
-        PutAwayTaskMapper putAwayTaskMapper,
-        PutAwayReceiptLineRepository putAwayReceiptLineRepository,
-        OutboxEventService outboxEventService) {
+                PutAwayTaskRepository putAwayTaskRepository,
+                PutAwayTaskMapper putAwayTaskMapper,
+                PutAwayReceiptLineRepository putAwayReceiptLineRepository,
+                OutboxEventService outboxEventService,
+                LocationBinClient locationBinClient) {
 
         this.putAwayTaskRepository = putAwayTaskRepository;
         this.putAwayTaskMapper = putAwayTaskMapper;
         this.putAwayReceiptLineRepository = putAwayReceiptLineRepository;
         this.outboxEventService = outboxEventService;
- }
+        this.locationBinClient = locationBinClient;
+        }
 
     @Transactional
         public PutAwayTaskResponse createPutAwayTask(
                 CreatePutAwayTaskRequest request) {
 
+          validateTargetBin(
+            request.getTargetBinId(),
+            request.getWarehouseId());
+            
         PutAwayReceiptLine receiptLine =
                 putAwayReceiptLineRepository
                         .findByGoodsReceiptLineId(
@@ -179,4 +190,53 @@ public class PutAwayTaskService {
                         .substring(0, 8)
                         .toUpperCase();
     }
+
+    private void validateTargetBin(UUID binId, UUID warehouseId) {
+
+        BinResponse bin;
+
+        try {
+                bin = locationBinClient.getBin(binId);
+        } catch (RestClientResponseException ex) {
+                if (ex.getStatusCode().value() == 404) {
+                throw new ResourceNotFoundException(
+                        "Target bin not found: " + binId);
+                }
+
+                throw new InvalidOperationException(
+                        "Unable to validate target bin. "
+                                + "Location-bin service returned HTTP "
+                                + ex.getStatusCode().value());
+        }
+
+        if (!"ACTIVE".equalsIgnoreCase(bin.status())) {
+                throw new InvalidOperationException(
+                        "Target bin is not active: " + binId);
+        }
+
+        LocationResponse location;
+
+        try {
+                location = locationBinClient.getLocation(bin.locationId());
+        } catch (RestClientResponseException ex) {
+                if (ex.getStatusCode().value() == 404) {
+                throw new ResourceNotFoundException(
+                        "Location not found for target bin: " + binId);
+                }
+
+                throw new InvalidOperationException(
+                        "Unable to validate the target bin's location.");
+        }
+
+        if (!"ACTIVE".equalsIgnoreCase(location.status())) {
+                throw new InvalidOperationException(
+                        "Target bin's location is not active: "
+                                + location.id());
+        }
+
+        if (!warehouseId.equals(location.warehouseId())) {
+                throw new InvalidOperationException(
+                        "Target bin does not belong to the specified warehouse.");
+        }
+        }
 }
