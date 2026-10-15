@@ -103,6 +103,13 @@ public class PutAwayTaskService {
         task.setStatus(PutAwayTaskStatus.OPEN);
         task.setCompletedAt(null);
 
+        task.setCreatedBy(
+        org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName()
+        );
+
         PutAwayTask savedTask =
                 putAwayTaskRepository.save(task);
 
@@ -141,6 +148,14 @@ public class PutAwayTaskService {
         }
 
         task.setStatus(PutAwayTaskStatus.COMPLETED);
+
+        task.setCompletedBy(
+        org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName()
+        );
+
         task.setCompletedAt(LocalDateTime.now());
 
         PutAwayTask savedTask =

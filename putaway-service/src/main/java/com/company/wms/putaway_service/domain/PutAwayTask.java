@@ -61,6 +61,12 @@ public class PutAwayTask {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Column(name = "completed_by", length = 100)
+    private String completedBy;
+
+    @Column(name = "created_by", length = 100)
+    private String createdBy;
+
     public PutAwayTask() {
     }
 
@@ -150,5 +156,21 @@ public class PutAwayTask {
 
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public String getCompletedBy() {
+        return completedBy;
+    }
+
+    public void setCompletedBy(String completedBy) {
+        this.completedBy = completedBy;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 }
