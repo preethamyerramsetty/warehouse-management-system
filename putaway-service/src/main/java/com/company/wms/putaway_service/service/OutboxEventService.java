@@ -3,6 +3,7 @@ package com.company.wms.putaway_service.service;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import com.company.wms.putaway_service.domain.OutboxEvent;
@@ -47,8 +48,13 @@ public class OutboxEventService {
             event.setEventVersion(1);
             event.setOccurredAt(now);
             event.setSource("putaway-service");
-            event.setCorrelationId(
-                    UUID.randomUUID().toString());
+            String correlationId = MDC.get("correlationId");
+
+                if (correlationId == null || correlationId.isBlank()) {
+                correlationId = UUID.randomUUID().toString();
+                }
+
+                event.setCorrelationId(correlationId);
 
             event.setPutAwayTaskId(task.getId());
             event.setTaskNumber(task.getTaskNumber());
