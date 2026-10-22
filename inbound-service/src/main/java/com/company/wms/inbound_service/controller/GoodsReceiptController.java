@@ -8,12 +8,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.company.wms.inbound_service.dto.CreateGoodsReceiptRequest;
 import com.company.wms.inbound_service.dto.GoodsReceiptResponse;
 import com.company.wms.inbound_service.service.GoodsReceiptService;
+
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import jakarta.validation.Valid;
 
@@ -29,16 +32,19 @@ public class GoodsReceiptController {
     }
 
     @PostMapping
-    public ResponseEntity<GoodsReceiptResponse> createGoodsReceipt(
-            @Valid @RequestBody CreateGoodsReceiptRequest request) {
+        public ResponseEntity<GoodsReceiptResponse> createGoodsReceipt(
+                @Valid @RequestBody CreateGoodsReceiptRequest request,
+                @RequestHeader(value = "X-Correlation-ID", required = false)
+                String correlationId) {
 
         GoodsReceiptResponse response =
-                goodsReceiptService.createGoodsReceipt(request);
+                goodsReceiptService.createGoodsReceipt(
+                        request, correlationId);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
-    }
+        }
 
     @GetMapping("/{id}")
     public ResponseEntity<GoodsReceiptResponse> getGoodsReceipt(

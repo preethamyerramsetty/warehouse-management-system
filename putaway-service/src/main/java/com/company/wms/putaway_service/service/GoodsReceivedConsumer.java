@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 public class GoodsReceivedConsumer {
 
+    private static final Logger log = LoggerFactory.getLogger(GoodsReceivedConsumer.class);
+
     private final ObjectMapper objectMapper;
     private final ProcessedEventRepository processedEventRepository;
     private final PutAwayReceiptLineRepository putAwayReceiptLineRepository;
@@ -31,34 +36,46 @@ public class GoodsReceivedConsumer {
         this.processedEventRepository = processedEventRepository;
         this.putAwayReceiptLineRepository =
                 putAwayReceiptLineRepository;
-    }
+        }
 
-    @KafkaListener(
-            topics = "goods-received",
-            groupId = "putaway-service-test"
-    )
-    @Transactional
-    public void consume(String message) {
+    
+        @KafkaListener(
+                topics = "goods-received",
+                groupId = "putaway-service-test"
+        )
+        @Transactional
+        public void consume(String message) {
+
+        String correlationId = null;
 
         try {
+                GoodsReceivedEvent event =
+                        objectMapper.readValue(
+                                message,
+                                GoodsReceivedEvent.class);
 
-            GoodsReceivedEvent event =
-                    objectMapper.readValue(
-                            message,
-                            GoodsReceivedEvent.class);
+                correlationId = event.getCorrelationId();
 
-            if (processedEventRepository
-                    .existsByEventId(event.getEventId())) {
+                if (correlationId != null && !correlationId.isBlank()) {
+                MDC.put("correlationId", correlationId);
+                }
 
-                System.out.println(
-                        "GoodsReceived event already processed: "
-                                + event.getEventId());
+                log.info(
+                        "Received GoodsReceived event: {}",
+                        event.getEventId());
+
+                if (processedEventRepository
+                        .existsByEventId(event.getEventId())) {
+
+                log.info(
+                        "GoodsReceived event already processed: {}",
+                        event.getEventId());
 
                 return;
-            }
+                }
 
-            for (GoodsReceivedEvent.GoodsReceivedLineEvent line
-                    : event.getLines()) {
+                for (GoodsReceivedEvent.GoodsReceivedLineEvent line
+                        : event.getLines()) {
 
                 PutAwayReceiptLine receiptLine =
                         new PutAwayReceiptLine();
@@ -68,61 +85,46 @@ public class GoodsReceivedConsumer {
                 receiptLine.setGoodsReceiptLineId(
                         line.getGoodsReceiptLineId());
 
-                receiptLine.setSkuId(
-                        line.getSkuId());
+                receiptLine.setSkuId(line.getSkuId());
 
-                BigDecimal receivedQuantity =
-                        line.getQuantity();
+                BigDecimal receivedQuantity = line.getQuantity();
 
-                receiptLine.setReceivedQuantity(
-                        receivedQuantity);
+                receiptLine.setReceivedQuantity(receivedQuantity);
+                receiptLine.setPutawayQuantity(BigDecimal.ZERO);
+                receiptLine.setRemainingQuantity(receivedQuantity);
 
-                receiptLine.setPutawayQuantity(
-                        BigDecimal.ZERO);
+                receiptLine.setCreatedAt(LocalDateTime.now());
+                receiptLine.setUpdatedAt(LocalDateTime.now());
 
-                receiptLine.setRemainingQuantity(
-                        receivedQuantity);
+                putAwayReceiptLineRepository.save(receiptLine);
+                }
 
-                receiptLine.setCreatedAt(
-                        LocalDateTime.now());
+                ProcessedEvent processedEvent = new ProcessedEvent();
 
-                receiptLine.setUpdatedAt(
-                        LocalDateTime.now());
+                processedEvent.setId(UUID.randomUUID());
+                processedEvent.setEventId(event.getEventId());
+                processedEvent.setEventType(event.getEventType());
+                processedEvent.setProcessedAt(LocalDateTime.now());
 
-                putAwayReceiptLineRepository.save(
-                        receiptLine);
-            }
+                processedEventRepository.save(processedEvent);
 
-            ProcessedEvent processedEvent =
-                    new ProcessedEvent();
-
-            processedEvent.setId(UUID.randomUUID());
-
-            processedEvent.setEventId(
-                    event.getEventId());
-
-            processedEvent.setEventType(
-                    event.getEventType());
-
-            processedEvent.setProcessedAt(
-                    LocalDateTime.now());
-
-            processedEventRepository.save(
-                    processedEvent);
-
-            System.out.println(
-                    "Processed GoodsReceived event: "
-                            + event.getEventId());
+                log.info(
+                        "Processed GoodsReceived event: {}",
+                        event.getEventId());
 
         } catch (Exception exception) {
 
-            System.err.println(
-                    "Failed to process GoodsReceived event: "
-                            + exception.getMessage());
+                log.error(
+                        "Failed to process GoodsReceived event",
+                        exception);
 
-            throw new RuntimeException(
-                    "Failed to process GoodsReceived event",
-                    exception);
+                throw new RuntimeException(
+                        "Failed to process GoodsReceived event",
+                        exception);
+
+        } finally {
+                MDC.remove("correlationId");
         }
-    }
+        }
+
 }

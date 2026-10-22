@@ -29,8 +29,9 @@ public class OutboxEventService {
     }
 
     public void createGoodsReceivedEvent(
-            GoodsReceipt goodsReceipt,
-            List<GoodsReceiptLine> lines) {
+        GoodsReceipt goodsReceipt,
+        List<GoodsReceiptLine> lines,
+        String correlationId) {
 
         UUID eventId = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
@@ -42,7 +43,7 @@ public class OutboxEventService {
         event.setEventVersion(1);
         event.setOccurredAt(now);
         event.setSource("inbound-service");
-        event.setCorrelationId(UUID.randomUUID().toString());
+        event.setCorrelationId(correlationId != null && !correlationId.isBlank() ? correlationId: UUID.randomUUID().toString());
         event.setGoodsReceiptId(goodsReceipt.getId());
         event.setWarehouseId(goodsReceipt.getWarehouseId());
         event.setReceiptNumber(goodsReceipt.getReceiptNumber());

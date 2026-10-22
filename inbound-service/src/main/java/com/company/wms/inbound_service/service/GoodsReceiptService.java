@@ -38,8 +38,9 @@ public class GoodsReceiptService {
     }
 
     @Transactional
-    public GoodsReceiptResponse createGoodsReceipt(
-            CreateGoodsReceiptRequest request) {
+        public GoodsReceiptResponse createGoodsReceipt(
+                CreateGoodsReceiptRequest request,
+                String correlationId) {
 
         // 1. Generate receipt number
         String receiptNumber = generateReceiptNumber();
@@ -89,7 +90,7 @@ public class GoodsReceiptService {
         List<GoodsReceiptLine> savedLines =
                 goodsReceiptLineRepository.saveAll(lines);
 
-        outboxEventService.createGoodsReceivedEvent(savedReceipt, savedLines);
+        outboxEventService.createGoodsReceivedEvent(savedReceipt, savedLines, correlationId);
 
         // 5. Return complete receipt
         return goodsReceiptMapper.toResponse(
