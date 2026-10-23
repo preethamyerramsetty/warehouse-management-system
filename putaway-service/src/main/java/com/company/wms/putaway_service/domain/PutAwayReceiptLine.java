@@ -32,6 +32,9 @@ public class PutAwayReceiptLine {
     @Column(name = "sku_id", nullable = false)
     private UUID skuId;
 
+    @Column(name = "warehouse_id")
+    private UUID warehouseId;
+
     @Column(name = "received_quantity", nullable = false)
     private BigDecimal receivedQuantity;
 
@@ -73,6 +76,14 @@ public class PutAwayReceiptLine {
 
     public void setSkuId(UUID skuId) {
         this.skuId = skuId;
+    }
+
+    public UUID getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(UUID warehouseId) {
+        this.warehouseId = warehouseId;
     }
 
     public BigDecimal getReceivedQuantity() {

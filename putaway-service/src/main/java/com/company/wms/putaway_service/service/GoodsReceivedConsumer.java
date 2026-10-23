@@ -87,6 +87,8 @@ public class GoodsReceivedConsumer {
 
                 receiptLine.setSkuId(line.getSkuId());
 
+                receiptLine.setWarehouseId(event.getWarehouseId());
+
                 BigDecimal receivedQuantity = line.getQuantity();
 
                 receiptLine.setReceivedQuantity(receivedQuantity);
