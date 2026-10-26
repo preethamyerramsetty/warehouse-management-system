@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.company.wms.location_bin_service.client.WarehouseClient;
 import com.company.wms.location_bin_service.domain.Location;
 import com.company.wms.location_bin_service.dto.CreateLocationRequest;
 import com.company.wms.location_bin_service.dto.LocationResponse;
@@ -20,21 +21,29 @@ public class LocationService {
 
     private final LocationRepository locationRepository;
     private final LocationMapper locationMapper;
+    private final WarehouseClient warehouseClient;
 
     public LocationService(
             LocationRepository locationRepository,
-            LocationMapper locationMapper) {
+            LocationMapper locationMapper,
+            WarehouseClient warehouseClient) {
 
         this.locationRepository = locationRepository;
         this.locationMapper = locationMapper;
+        this.warehouseClient = warehouseClient;
     }
 
     @Transactional
     public LocationResponse createLocation(CreateLocationRequest request) {
 
+        warehouseClient.validateWarehouseExists(
+                request.getWarehouseId());
+
         if (locationRepository.existsByWarehouseIdAndLocationCode(
                 request.getWarehouseId(),
                 request.getLocationCode())) {
+
+            // Keep the existing duplicate-code exception unchanged.
 
             throw new DuplicateResourceException(
                     "Location code already exists in warehouse: "

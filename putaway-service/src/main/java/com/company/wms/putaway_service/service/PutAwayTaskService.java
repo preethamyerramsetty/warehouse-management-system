@@ -50,11 +50,7 @@ public class PutAwayTaskService {
         public PutAwayTaskResponse createPutAwayTask(
                 CreatePutAwayTaskRequest request) {
 
-          validateTargetBin(
-            request.getTargetBinId(),
-            request.getWarehouseId());
-            
-        PutAwayReceiptLine receiptLine =
+          PutAwayReceiptLine receiptLine =
                 putAwayReceiptLineRepository
                         .findByGoodsReceiptLineId(
                                 request.getGoodsReceiptLineId())
@@ -63,6 +59,31 @@ public class PutAwayTaskService {
                                         "Goods Receipt Line is not available "
                                                 + "for Put-Away: "
                                                 + request.getGoodsReceiptLineId()));
+
+        // Validate that the requested SKU matches the receipt line.
+        if (!request.getSkuId().equals(receiptLine.getSkuId())) {
+        throw new InvalidOperationException(
+                "Requested SKU does not match the Goods Receipt Line.");
+        }
+
+        // Do not allow Put-Away for legacy receipt lines whose warehouse
+        // cannot be determined.
+        if (receiptLine.getWarehouseId() == null) {
+        throw new InvalidOperationException(
+                "Warehouse information is missing for this Goods Receipt Line.");
+        }
+
+        // Validate that the requested warehouse matches the receipt line.
+        if (!request.getWarehouseId().equals(receiptLine.getWarehouseId())) {
+        throw new InvalidOperationException(
+                "Requested warehouse does not match the Goods Receipt Line.");
+        }
+
+        // Validate the target bin against the receipt line's warehouse,
+        // not against an untrusted warehouse ID from the request.
+        validateTargetBin(
+                request.getTargetBinId(),
+                receiptLine.getWarehouseId());
 
         if (request.getQuantity()
                 .compareTo(receiptLine.getRemainingQuantity()) > 0) {
