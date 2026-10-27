@@ -39,4 +39,11 @@ public class WarehouseClient {
                     "Warehouse not found: " + warehouseId);
         }
     }
+
+    public WarehouseResponse getWarehouse(UUID warehouseId) {
+        return restClient.get()
+                .uri("/api/v1/warehouses/{id}", warehouseId)
+                .retrieve()
+                .body(WarehouseResponse.class);
+    }
 }

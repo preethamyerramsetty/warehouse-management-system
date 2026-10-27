@@ -1,30 +1,75 @@
 package com.company.wms.inbound_service.service;
 
-import com.company.wms.inbound_service.domain.OutboxEvent;
+import java.util.concurrent.CompletableFuture;
+
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CompletableFuture;
+import com.company.wms.inbound_service.domain.OutboxEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class KafkaEventPublisher {
 
-    private static final String GOODS_RECEIVED_TOPIC =
-            "goods-received";
+    private static final String GOODS_RECEIVED_TOPIC = "goods-received";
 
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
 
     public KafkaEventPublisher(
-            KafkaTemplate<String, String> kafkaTemplate) {
+            KafkaTemplate<String, String> kafkaTemplate,
+            ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
+        this.objectMapper = objectMapper;
     }
 
     public CompletableFuture<?> publish(OutboxEvent event) {
+        try {
+            JsonNode payloadNode = objectMapper.readTree(event.getPayload());
 
-        return kafkaTemplate.send(
-                GOODS_RECEIVED_TOPIC,
-                event.getEntityId(),
-                event.getPayload()
-        );
+            if (!(payloadNode instanceof ObjectNode)) {
+                throw new IllegalArgumentException(
+                        "Event payload must be a JSON object");
+            }
+
+            ObjectNode payload = (ObjectNode) payloadNode;
+
+            // Keep event metadata in the envelope, not in the payload.
+            payload.remove(java.util.List.of(
+                    "eventId",
+                    "eventType",
+                    "eventVersion",
+                    "occurredAt",
+                    "source",
+                    "correlationId"
+            ));
+
+            ObjectNode envelope = objectMapper.createObjectNode();
+            envelope.put("eventId", event.getEventId().toString());
+            envelope.put("eventType", event.getEventType());
+            envelope.put("eventVersion", event.getEventVersion());
+            envelope.put("occurredAt", event.getOccurredAt().toString());
+            envelope.put("source", event.getSource());
+            envelope.put("correlationId", event.getCorrelationId());
+            envelope.put("entityId", event.getEntityId());
+            envelope.set("payload", payload);
+
+            String message = objectMapper.writeValueAsString(envelope);
+
+            return kafkaTemplate.send(
+                    GOODS_RECEIVED_TOPIC,
+                    event.getEntityId(),
+                    message
+            );
+
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException(
+                    "Failed to create GoodsReceived event envelope",
+                    exception
+            );
+        }
     }
 }

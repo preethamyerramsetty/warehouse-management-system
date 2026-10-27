@@ -60,31 +60,6 @@ public class PutAwayTaskService {
                                                 + "for Put-Away: "
                                                 + request.getGoodsReceiptLineId()));
 
-        // Validate that the requested SKU matches the receipt line.
-        if (!request.getSkuId().equals(receiptLine.getSkuId())) {
-        throw new InvalidOperationException(
-                "Requested SKU does not match the Goods Receipt Line.");
-        }
-
-        // Do not allow Put-Away for legacy receipt lines whose warehouse
-        // cannot be determined.
-        if (receiptLine.getWarehouseId() == null) {
-        throw new InvalidOperationException(
-                "Warehouse information is missing for this Goods Receipt Line.");
-        }
-
-        // Validate that the requested warehouse matches the receipt line.
-        if (!request.getWarehouseId().equals(receiptLine.getWarehouseId())) {
-        throw new InvalidOperationException(
-                "Requested warehouse does not match the Goods Receipt Line.");
-        }
-
-        // Validate the target bin against the receipt line's warehouse,
-        // not against an untrusted warehouse ID from the request.
-        validateTargetBin(
-                request.getTargetBinId(),
-                receiptLine.getWarehouseId());
-
         if (request.getQuantity()
                 .compareTo(receiptLine.getRemainingQuantity()) > 0) {
 
@@ -183,37 +158,6 @@ public class PutAwayTaskService {
                 putAwayTaskRepository.save(task);
 
         outboxEventService.createPutAwayCompletedEvent(savedTask);
-
-        return putAwayTaskMapper.toResponse(savedTask);
-        }
-
-    @Transactional
-        public PutAwayTaskResponse createPutAwayTaskFromGoodsReceived(
-                UUID goodsReceiptLineId,
-                UUID skuId,
-                BigDecimal quantity,
-                UUID warehouseId) {
-
-        PutAwayTask task = new PutAwayTask();
-
-        task.setGoodsReceiptLineId(goodsReceiptLineId);
-        task.setSkuId(skuId);
-        task.setQuantity(quantity);
-        task.setWarehouseId(warehouseId);
-
-        /*
-        * Target bin selection will be implemented later.
-        * For now the task is created without a target bin.
-        */
-        task.setTargetBinId(null);
-
-        task.setTaskNumber(generateTaskNumber());
-        task.setStatus(PutAwayTaskStatus.OPEN);
-        task.setCreatedAt(LocalDateTime.now());
-        task.setCompletedAt(null);
-
-        PutAwayTask savedTask =
-                putAwayTaskRepository.save(task);
 
         return putAwayTaskMapper.toResponse(savedTask);
         }

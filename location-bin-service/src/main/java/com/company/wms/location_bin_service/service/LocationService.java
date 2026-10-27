@@ -36,9 +36,6 @@ public class LocationService {
     @Transactional
     public LocationResponse createLocation(CreateLocationRequest request) {
 
-        warehouseClient.validateWarehouseExists(
-                request.getWarehouseId());
-
         if (locationRepository.existsByWarehouseIdAndLocationCode(
                 request.getWarehouseId(),
                 request.getLocationCode())) {

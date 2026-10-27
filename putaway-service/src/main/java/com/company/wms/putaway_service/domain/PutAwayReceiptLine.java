@@ -32,7 +32,7 @@ public class PutAwayReceiptLine {
     @Column(name = "sku_id", nullable = false)
     private UUID skuId;
 
-    @Column(name = "warehouse_id")
+    @Column(name = "warehouse_id", nullable = false)
     private UUID warehouseId;
 
     @Column(name = "received_quantity", nullable = false)

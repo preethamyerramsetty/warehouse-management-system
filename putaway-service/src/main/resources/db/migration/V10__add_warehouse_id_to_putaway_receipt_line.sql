@@ -1,5 +1,7 @@
 ALTER TABLE putaway_receipt_line
 ADD COLUMN warehouse_id UUID;
+ALTER TABLE putaway_receipt_line
+ADD COLUMN warehouse_id UUID;
 
 -- Backfill existing receipt lines when their warehouse
 -- can be determined unambiguously from existing tasks.

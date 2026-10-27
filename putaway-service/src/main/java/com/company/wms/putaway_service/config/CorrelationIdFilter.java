@@ -2,6 +2,7 @@ package com.company.wms.putaway_service.config;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,9 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
 
     private static final String HEADER_NAME = "X-Correlation-ID";
 
+    private static final Pattern VALID_CORRELATION_ID =
+            Pattern.compile("[A-Za-z0-9._-]{1,100}");
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -26,16 +30,12 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
 
         String correlationId = request.getHeader(HEADER_NAME);
 
-        if (correlationId == null || correlationId.isBlank()) {
+        if (correlationId == null
+                || !VALID_CORRELATION_ID.matcher(correlationId).matches()) {
             correlationId = UUID.randomUUID().toString();
         }
 
         MDC.put("correlationId", correlationId);
-
-        org.slf4j.LoggerFactory
-            .getLogger(CorrelationIdFilter.class)
-            .info("Correlation ID filter executed");
-            
         response.setHeader(HEADER_NAME, correlationId);
 
         try {

@@ -6,7 +6,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientResponseException;
 
+import com.company.wms.inbound_service.client.WarehouseClient;
 import com.company.wms.inbound_service.domain.GoodsReceipt;
 import com.company.wms.inbound_service.domain.GoodsReceiptLine;
 import com.company.wms.inbound_service.domain.GoodsReceiptLineStatus;
@@ -25,22 +27,37 @@ public class GoodsReceiptService {
     private final GoodsReceiptLineRepository goodsReceiptLineRepository;
     private final GoodsReceiptMapper goodsReceiptMapper;
     private final OutboxEventService outboxEventService;
+    private final WarehouseClient warehouseClient;
 
     public GoodsReceiptService(
-            GoodsReceiptRepository goodsReceiptRepository,
-            GoodsReceiptLineRepository goodsReceiptLineRepository,
-            GoodsReceiptMapper goodsReceiptMapper, OutboxEventService outboxEventService) {
+                GoodsReceiptRepository goodsReceiptRepository,
+                GoodsReceiptLineRepository goodsReceiptLineRepository,
+                GoodsReceiptMapper goodsReceiptMapper,
+                OutboxEventService outboxEventService,
+                WarehouseClient warehouseClient) {
 
         this.goodsReceiptRepository = goodsReceiptRepository;
         this.goodsReceiptLineRepository = goodsReceiptLineRepository;
         this.goodsReceiptMapper = goodsReceiptMapper;
         this.outboxEventService = outboxEventService;
-    }
+        this.warehouseClient = warehouseClient;
+        }
 
     @Transactional
         public GoodsReceiptResponse createGoodsReceipt(
                 CreateGoodsReceiptRequest request,
                 String correlationId) {
+
+        try {
+        warehouseClient.getWarehouse(request.getWarehouseId());
+        } catch (RestClientResponseException ex) {
+        if (ex.getStatusCode().value() == 404) {
+                throw new ResourceNotFoundException(
+                        "Warehouse not found: " + request.getWarehouseId());
+        }
+
+        throw ex;
+        }
 
         // 1. Generate receipt number
         String receiptNumber = generateReceiptNumber();

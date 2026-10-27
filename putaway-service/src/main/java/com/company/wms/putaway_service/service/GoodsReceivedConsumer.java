@@ -16,6 +16,7 @@ import com.company.wms.putaway_service.domain.PutAwayReceiptLine;
 import com.company.wms.putaway_service.dto.GoodsReceivedEvent;
 import com.company.wms.putaway_service.repository.ProcessedEventRepository;
 import com.company.wms.putaway_service.repository.PutAwayReceiptLineRepository;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
@@ -49,12 +50,39 @@ public class GoodsReceivedConsumer {
         String correlationId = null;
 
         try {
-                GoodsReceivedEvent event =
-                        objectMapper.readValue(
-                                message,
-                                GoodsReceivedEvent.class);
+                
+                JsonNode envelope = objectMapper.readTree(message);
+
+                if (envelope.path("payload").isMissingNode()
+                        || envelope.path("eventId").isMissingNode()
+                        || envelope.path("entityId").isMissingNode()) {
+                throw new IllegalArgumentException(
+                        "Invalid GoodsReceived event envelope");
+                }
+
+                if (!"GoodsReceived".equals(
+                        envelope.path("eventType").asText())) {
+                throw new IllegalArgumentException(
+                        "Unexpected event type");
+                }
+
+                GoodsReceivedEvent event = objectMapper.treeToValue(
+                        envelope.get("payload"),
+                        GoodsReceivedEvent.class
+                );
+
+                event.setEventId(UUID.fromString(
+                        envelope.path("eventId").asText()));
+                event.setEventType(envelope.path("eventType").asText());
+                event.setEventVersion(envelope.path("eventVersion").asInt());
+                event.setOccurredAt(LocalDateTime.parse(
+                        envelope.path("occurredAt").asText()));
+                event.setSource(envelope.path("source").asText());
+                event.setCorrelationId(
+                        envelope.path("correlationId").asText());
 
                 correlationId = event.getCorrelationId();
+
 
                 if (correlationId != null && !correlationId.isBlank()) {
                 MDC.put("correlationId", correlationId);
