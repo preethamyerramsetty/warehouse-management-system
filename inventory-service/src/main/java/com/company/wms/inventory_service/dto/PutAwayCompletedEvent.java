@@ -12,14 +12,8 @@ public class PutAwayCompletedEvent {
     private LocalDateTime occurredAt;
     private String source;
     private String correlationId;
-
-    private UUID putAwayTaskId;
-    private String taskNumber;
-    private UUID goodsReceiptLineId;
-    private UUID skuId;
-    private BigDecimal quantity;
-    private UUID warehouseId;
-    private UUID targetBinId;
+    private String entityId;
+    private Payload payload;
 
     public UUID getEventId() {
         return eventId;
@@ -69,59 +63,86 @@ public class PutAwayCompletedEvent {
         this.correlationId = correlationId;
     }
 
-    public UUID getPutAwayTaskId() {
-        return putAwayTaskId;
+    public String getEntityId() {
+        return entityId;
     }
 
-    public void setPutAwayTaskId(UUID putAwayTaskId) {
-        this.putAwayTaskId = putAwayTaskId;
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
     }
 
-    public String getTaskNumber() {
-        return taskNumber;
+    public Payload getPayload() {
+        return payload;
     }
 
-    public void setTaskNumber(String taskNumber) {
-        this.taskNumber = taskNumber;
+    public void setPayload(Payload payload) {
+        this.payload = payload;
     }
 
-    public UUID getGoodsReceiptLineId() {
-        return goodsReceiptLineId;
-    }
+    public static class Payload {
 
-    public void setGoodsReceiptLineId(UUID goodsReceiptLineId) {
-        this.goodsReceiptLineId = goodsReceiptLineId;
-    }
+        private UUID putAwayTaskId;
+        private String taskNumber;
+        private UUID goodsReceiptLineId;
+        private UUID skuId;
+        private BigDecimal quantity;
+        private UUID warehouseId;
+        private UUID targetBinId;
 
-    public UUID getSkuId() {
-        return skuId;
-    }
+        public UUID getPutAwayTaskId() {
+            return putAwayTaskId;
+        }
 
-    public void setSkuId(UUID skuId) {
-        this.skuId = skuId;
-    }
+        public void setPutAwayTaskId(UUID putAwayTaskId) {
+            this.putAwayTaskId = putAwayTaskId;
+        }
 
-    public BigDecimal getQuantity() {
-        return quantity;
-    }
+        public String getTaskNumber() {
+            return taskNumber;
+        }
 
-    public void setQuantity(BigDecimal quantity) {
-        this.quantity = quantity;
-    }
+        public void setTaskNumber(String taskNumber) {
+            this.taskNumber = taskNumber;
+        }
 
-    public UUID getWarehouseId() {
-        return warehouseId;
-    }
+        public UUID getGoodsReceiptLineId() {
+            return goodsReceiptLineId;
+        }
 
-    public void setWarehouseId(UUID warehouseId) {
-        this.warehouseId = warehouseId;
-    }
+        public void setGoodsReceiptLineId(UUID goodsReceiptLineId) {
+            this.goodsReceiptLineId = goodsReceiptLineId;
+        }
 
-    public UUID getTargetBinId() {
-        return targetBinId;
-    }
+        public UUID getSkuId() {
+            return skuId;
+        }
 
-    public void setTargetBinId(UUID targetBinId) {
-        this.targetBinId = targetBinId;
+        public void setSkuId(UUID skuId) {
+            this.skuId = skuId;
+        }
+
+        public BigDecimal getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(BigDecimal quantity) {
+            this.quantity = quantity;
+        }
+
+        public UUID getWarehouseId() {
+            return warehouseId;
+        }
+
+        public void setWarehouseId(UUID warehouseId) {
+            this.warehouseId = warehouseId;
+        }
+
+        public UUID getTargetBinId() {
+            return targetBinId;
+        }
+
+        public void setTargetBinId(UUID targetBinId) {
+            this.targetBinId = targetBinId;
+        }
     }
 }

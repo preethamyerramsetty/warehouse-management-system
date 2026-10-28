@@ -1,2 +1,2 @@
-com\company\wms\apigateway\config\JwtConfig.class
 com\company\wms\apigateway\ApiGatewayApplication.class
+com\company\wms\apigateway\config\JwtConfig.class

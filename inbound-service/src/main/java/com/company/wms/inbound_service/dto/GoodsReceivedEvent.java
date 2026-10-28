@@ -1,3 +1,4 @@
+
 package com.company.wms.inbound_service.dto;
 
 import java.math.BigDecimal;
@@ -13,10 +14,8 @@ public class GoodsReceivedEvent {
     private LocalDateTime occurredAt;
     private String source;
     private String correlationId;
-    private UUID goodsReceiptId;
-    private UUID warehouseId;
-    private String receiptNumber;
-    private List<GoodsReceivedLineEvent> lines;
+    private String entityId;
+    private Payload payload;
 
     public GoodsReceivedEvent() {
     }
@@ -69,36 +68,63 @@ public class GoodsReceivedEvent {
         this.correlationId = correlationId;
     }
 
-    public UUID getGoodsReceiptId() {
-        return goodsReceiptId;
+    public String getEntityId() {
+        return entityId;
     }
 
-    public void setGoodsReceiptId(UUID goodsReceiptId) {
-        this.goodsReceiptId = goodsReceiptId;
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
     }
 
-    public UUID getWarehouseId() {
-        return warehouseId;
+    public Payload getPayload() {
+        return payload;
     }
 
-    public void setWarehouseId(UUID warehouseId) {
-        this.warehouseId = warehouseId;
+    public void setPayload(Payload payload) {
+        this.payload = payload;
     }
 
-    public String getReceiptNumber() {
-        return receiptNumber;
-    }
+    public static class Payload {
 
-    public void setReceiptNumber(String receiptNumber) {
-        this.receiptNumber = receiptNumber;
-    }
+        private UUID goodsReceiptId;
+        private UUID warehouseId;
+        private String receiptNumber;
+        private List<GoodsReceivedLineEvent> lines;
 
-    public List<GoodsReceivedLineEvent> getLines() {
-        return lines;
-    }
+        public Payload() {
+        }
 
-    public void setLines(List<GoodsReceivedLineEvent> lines) {
-        this.lines = lines;
+        public UUID getGoodsReceiptId() {
+            return goodsReceiptId;
+        }
+
+        public void setGoodsReceiptId(UUID goodsReceiptId) {
+            this.goodsReceiptId = goodsReceiptId;
+        }
+
+        public UUID getWarehouseId() {
+            return warehouseId;
+        }
+
+        public void setWarehouseId(UUID warehouseId) {
+            this.warehouseId = warehouseId;
+        }
+
+        public String getReceiptNumber() {
+            return receiptNumber;
+        }
+
+        public void setReceiptNumber(String receiptNumber) {
+            this.receiptNumber = receiptNumber;
+        }
+
+        public List<GoodsReceivedLineEvent> getLines() {
+            return lines;
+        }
+
+        public void setLines(List<GoodsReceivedLineEvent> lines) {
+            this.lines = lines;
+        }
     }
 
     public static class GoodsReceivedLineEvent {

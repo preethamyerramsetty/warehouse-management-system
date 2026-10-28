@@ -12,16 +12,8 @@ public class InventoryUpdatedEvent {
     private LocalDateTime occurredAt;
     private String source;
     private String correlationId;
-
-    private UUID skuId;
-    private UUID warehouseId;
-    private UUID binId;
-
-    private BigDecimal quantityChanged;
-    private BigDecimal availableQuantity;
-
-    private String movementType;
-    private UUID referenceId;
+    private String entityId;
+    private Payload payload;
 
     public UUID getEventId() {
         return eventId;
@@ -71,59 +63,86 @@ public class InventoryUpdatedEvent {
         this.correlationId = correlationId;
     }
 
-    public UUID getSkuId() {
-        return skuId;
+    public String getEntityId() {
+        return entityId;
     }
 
-    public void setSkuId(UUID skuId) {
-        this.skuId = skuId;
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
     }
 
-    public UUID getWarehouseId() {
-        return warehouseId;
+    public Payload getPayload() {
+        return payload;
     }
 
-    public void setWarehouseId(UUID warehouseId) {
-        this.warehouseId = warehouseId;
+    public void setPayload(Payload payload) {
+        this.payload = payload;
     }
 
-    public UUID getBinId() {
-        return binId;
-    }
+    public static class Payload {
 
-    public void setBinId(UUID binId) {
-        this.binId = binId;
-    }
+        private UUID skuId;
+        private UUID warehouseId;
+        private UUID binId;
+        private BigDecimal quantityChanged;
+        private BigDecimal availableQuantity;
+        private String movementType;
+        private UUID referenceId;
 
-    public BigDecimal getQuantityChanged() {
-        return quantityChanged;
-    }
+        public UUID getSkuId() {
+            return skuId;
+        }
 
-    public void setQuantityChanged(BigDecimal quantityChanged) {
-        this.quantityChanged = quantityChanged;
-    }
+        public void setSkuId(UUID skuId) {
+            this.skuId = skuId;
+        }
 
-    public BigDecimal getAvailableQuantity() {
-        return availableQuantity;
-    }
+        public UUID getWarehouseId() {
+            return warehouseId;
+        }
 
-    public void setAvailableQuantity(BigDecimal availableQuantity) {
-        this.availableQuantity = availableQuantity;
-    }
+        public void setWarehouseId(UUID warehouseId) {
+            this.warehouseId = warehouseId;
+        }
 
-    public String getMovementType() {
-        return movementType;
-    }
+        public UUID getBinId() {
+            return binId;
+        }
 
-    public void setMovementType(String movementType) {
-        this.movementType = movementType;
-    }
+        public void setBinId(UUID binId) {
+            this.binId = binId;
+        }
 
-    public UUID getReferenceId() {
-        return referenceId;
-    }
+        public BigDecimal getQuantityChanged() {
+            return quantityChanged;
+        }
 
-    public void setReferenceId(UUID referenceId) {
-        this.referenceId = referenceId;
+        public void setQuantityChanged(BigDecimal quantityChanged) {
+            this.quantityChanged = quantityChanged;
+        }
+
+        public BigDecimal getAvailableQuantity() {
+            return availableQuantity;
+        }
+
+        public void setAvailableQuantity(BigDecimal availableQuantity) {
+            this.availableQuantity = availableQuantity;
+        }
+
+        public String getMovementType() {
+            return movementType;
+        }
+
+        public void setMovementType(String movementType) {
+            this.movementType = movementType;
+        }
+
+        public UUID getReferenceId() {
+            return referenceId;
+        }
+
+        public void setReferenceId(UUID referenceId) {
+            this.referenceId = referenceId;
+        }
     }
 }

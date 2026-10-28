@@ -1,3 +1,4 @@
+
 package com.company.wms.inbound_service.service;
 
 import java.time.LocalDateTime;
@@ -29,36 +30,46 @@ public class OutboxEventService {
     }
 
     public void createGoodsReceivedEvent(
-        GoodsReceipt goodsReceipt,
-        List<GoodsReceiptLine> lines,
-        String correlationId) {
+            GoodsReceipt goodsReceipt,
+            List<GoodsReceiptLine> lines,
+            String correlationId) {
 
         UUID eventId = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
 
-        GoodsReceivedEvent event = new GoodsReceivedEvent();
+        String effectiveCorrelationId =
+                correlationId != null && !correlationId.isBlank()
+                        ? correlationId
+                        : UUID.randomUUID().toString();
 
+        GoodsReceivedEvent event = new GoodsReceivedEvent();
         event.setEventId(eventId);
         event.setEventType("GoodsReceived");
         event.setEventVersion(1);
         event.setOccurredAt(now);
         event.setSource("inbound-service");
-        event.setCorrelationId(correlationId != null && !correlationId.isBlank() ? correlationId: UUID.randomUUID().toString());
-        event.setGoodsReceiptId(goodsReceipt.getId());
-        event.setWarehouseId(goodsReceipt.getWarehouseId());
-        event.setReceiptNumber(goodsReceipt.getReceiptNumber());
+        event.setCorrelationId(effectiveCorrelationId);
+        event.setEntityId(goodsReceipt.getId().toString());
+
+        GoodsReceivedEvent.Payload payload =
+                new GoodsReceivedEvent.Payload();
+
+        payload.setGoodsReceiptId(goodsReceipt.getId());
+        payload.setWarehouseId(goodsReceipt.getWarehouseId());
+        payload.setReceiptNumber(goodsReceipt.getReceiptNumber());
 
         List<GoodsReceivedEvent.GoodsReceivedLineEvent> eventLines =
                 lines.stream()
                         .map(this::toEventLine)
                         .toList();
 
-        event.setLines(eventLines);
+        payload.setLines(eventLines);
+        event.setPayload(payload);
 
-        String payload;
+        String serializedEvent;
 
         try {
-            payload = objectMapper.writeValueAsString(event);
+            serializedEvent = objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException(
                     "Failed to serialize GoodsReceived event",
@@ -66,19 +77,18 @@ public class OutboxEventService {
         }
 
         OutboxEvent outboxEvent = new OutboxEvent();
-
         outboxEvent.setEventId(eventId);
         outboxEvent.setEventType("GoodsReceived");
         outboxEvent.setEventVersion(1);
         outboxEvent.setOccurredAt(now);
         outboxEvent.setSource("inbound-service");
-        outboxEvent.setCorrelationId(event.getCorrelationId());
+        outboxEvent.setCorrelationId(effectiveCorrelationId);
         outboxEvent.setEntityId(goodsReceipt.getId().toString());
-        outboxEvent.setPayload(payload);
+        outboxEvent.setPayload(serializedEvent);
         outboxEvent.setStatus(OutboxEventStatus.PENDING);
         outboxEvent.setRetryCount(0);
         outboxEvent.setCreatedAt(now);
-        outboxEvent.setNextAttemptAt(LocalDateTime.now());
+        outboxEvent.setNextAttemptAt(now);
 
         outboxEventRepository.save(outboxEvent);
     }

@@ -1,3 +1,4 @@
+
 package com.company.wms.putaway_service.service;
 
 import java.time.LocalDateTime;
@@ -23,77 +24,68 @@ public class OutboxEventService {
             OutboxEventRepository outboxEventRepository,
             ObjectMapper objectMapper) {
 
-        this.outboxEventRepository =
-                outboxEventRepository;
-
+        this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
     }
 
-    public void createPutAwayCompletedEvent(
-            PutAwayTask task) {
+    public void createPutAwayCompletedEvent(PutAwayTask task) {
 
         try {
-
             UUID eventId = UUID.randomUUID();
+            LocalDateTime now = LocalDateTime.now();
 
-            LocalDateTime now =
-                    LocalDateTime.now();
+            String correlationId = MDC.get("correlationId");
+
+            if (correlationId == null || correlationId.isBlank()) {
+                correlationId = UUID.randomUUID().toString();
+            }
+
+            PutAwayCompletedEvent.Payload payload =
+                    new PutAwayCompletedEvent.Payload();
+
+            payload.setPutAwayTaskId(task.getId());
+            payload.setTaskNumber(task.getTaskNumber());
+            payload.setGoodsReceiptLineId(
+                    task.getGoodsReceiptLineId());
+            payload.setSkuId(task.getSkuId());
+            payload.setQuantity(task.getQuantity());
+            payload.setWarehouseId(task.getWarehouseId());
+            payload.setTargetBinId(task.getTargetBinId());
 
             PutAwayCompletedEvent event =
                     new PutAwayCompletedEvent();
 
             event.setEventId(eventId);
-            event.setWarehouseId(task.getWarehouseId());
             event.setEventType("PutAwayCompleted");
             event.setEventVersion(1);
             event.setOccurredAt(now);
             event.setSource("putaway-service");
-            String correlationId = MDC.get("correlationId");
+            event.setCorrelationId(correlationId);
+            event.setEntityId(task.getId().toString());
+            event.setPayload(payload);
 
-                if (correlationId == null || correlationId.isBlank()) {
-                correlationId = UUID.randomUUID().toString();
-                }
-
-                event.setCorrelationId(correlationId);
-
-            event.setPutAwayTaskId(task.getId());
-            event.setTaskNumber(task.getTaskNumber());
-            event.setGoodsReceiptLineId(
-                    task.getGoodsReceiptLineId());
-            event.setSkuId(task.getSkuId());
-            event.setQuantity(task.getQuantity());
-            event.setTargetBinId(task.getTargetBinId());
-
-            String payload =
+            String serializedEvent =
                     objectMapper.writeValueAsString(event);
 
-            OutboxEvent outboxEvent =
-                    new OutboxEvent();
+            OutboxEvent outboxEvent = new OutboxEvent();
 
             outboxEvent.setId(UUID.randomUUID());
             outboxEvent.setEventId(eventId);
-            outboxEvent.setEventType(
-                    "PutAwayCompleted");
+            outboxEvent.setEventType("PutAwayCompleted");
             outboxEvent.setEventVersion(1);
             outboxEvent.setOccurredAt(now);
-            outboxEvent.setSource(
-                    "putaway-service");
-            outboxEvent.setCorrelationId(
-                    event.getCorrelationId());
-            outboxEvent.setEntityId(
-                    task.getId().toString());
-            outboxEvent.setPayload(payload);
-            outboxEvent.setStatus(
-                    OutboxEventStatus.PENDING);
+            outboxEvent.setSource("putaway-service");
+            outboxEvent.setCorrelationId(correlationId);
+            outboxEvent.setEntityId(task.getId().toString());
+            outboxEvent.setPayload(serializedEvent);
+            outboxEvent.setStatus(OutboxEventStatus.PENDING);
             outboxEvent.setRetryCount(0);
             outboxEvent.setCreatedAt(now);
-            outboxEvent.setNextAttemptAt(LocalDateTime.now());
+            outboxEvent.setNextAttemptAt(now);
 
-            outboxEventRepository.save(
-                    outboxEvent);
+            outboxEventRepository.save(outboxEvent);
 
         } catch (Exception exception) {
-
             throw new RuntimeException(
                     "Failed to create PutAwayCompleted outbox event",
                     exception);

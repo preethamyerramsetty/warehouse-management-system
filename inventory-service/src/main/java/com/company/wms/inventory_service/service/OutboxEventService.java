@@ -33,59 +33,62 @@ public class OutboxEventService {
             InventoryBalance balance) {
 
         try {
+            PutAwayCompletedEvent.Payload sourcePayload =
+                    sourceEvent.getPayload();
+
+            UUID eventId = UUID.randomUUID();
+            LocalDateTime now = LocalDateTime.now();
+            String entityId = balance.getSkuId().toString();
+
+            InventoryUpdatedEvent.Payload payload =
+                    new InventoryUpdatedEvent.Payload();
+
+            payload.setSkuId(balance.getSkuId());
+            payload.setWarehouseId(balance.getWarehouseId());
+            payload.setBinId(balance.getBinId());
+            payload.setQuantityChanged(sourcePayload.getQuantity());
+            payload.setAvailableQuantity(
+                    balance.getAvailableQuantity());
+            payload.setMovementType("PUTAWAY");
+            payload.setReferenceId(
+                    sourcePayload.getPutAwayTaskId());
+
             InventoryUpdatedEvent event =
                     new InventoryUpdatedEvent();
 
-            event.setEventId(UUID.randomUUID());
+            event.setEventId(eventId);
             event.setEventType("InventoryUpdated");
             event.setEventVersion(1);
-            event.setOccurredAt(LocalDateTime.now());
+            event.setOccurredAt(now);
             event.setSource("inventory-service");
             event.setCorrelationId(sourceEvent.getCorrelationId());
-
-            event.setSkuId(balance.getSkuId());
-            event.setWarehouseId(balance.getWarehouseId());
-            event.setBinId(balance.getBinId());
-
-            event.setQuantityChanged(sourceEvent.getQuantity());
-            event.setAvailableQuantity(
-                    balance.getAvailableQuantity()
-            );
-
-            event.setMovementType("PUTAWAY");
-            event.setReferenceId(
-                    sourceEvent.getPutAwayTaskId()
-            );
+            event.setEntityId(entityId);
+            event.setPayload(payload);
 
             OutboxEvent outboxEvent = new OutboxEvent();
 
             outboxEvent.setId(UUID.randomUUID());
-            outboxEvent.setEventId(event.getEventId());
+            outboxEvent.setEventId(eventId);
             outboxEvent.setEventType("InventoryUpdated");
             outboxEvent.setEventVersion(1);
-            outboxEvent.setOccurredAt(event.getOccurredAt());
+            outboxEvent.setOccurredAt(now);
             outboxEvent.setSource("inventory-service");
             outboxEvent.setCorrelationId(event.getCorrelationId());
-            outboxEvent.setEntityId(
-                    balance.getSkuId().toString()
-            );
-
+            outboxEvent.setEntityId(entityId);
             outboxEvent.setPayload(
-                    objectMapper.writeValueAsString(event)
-            );
+                    objectMapper.writeValueAsString(event));
 
             outboxEvent.setStatus(OutboxEventStatus.PENDING);
             outboxEvent.setRetryCount(0);
-            outboxEvent.setCreatedAt(LocalDateTime.now());
-            outboxEvent.setNextAttemptAt(LocalDateTime.now());
+            outboxEvent.setCreatedAt(now);
+            outboxEvent.setNextAttemptAt(now);
 
             outboxEventRepository.save(outboxEvent);
 
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException exception) {
             throw new IllegalStateException(
                     "Failed to create InventoryUpdated event",
-                    e
-            );
+                    exception);
         }
     }
 }

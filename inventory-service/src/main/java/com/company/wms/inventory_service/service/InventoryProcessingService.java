@@ -6,13 +6,14 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.company.wms.inventory_service.domain.InventoryBalance;
 import com.company.wms.inventory_service.domain.InventoryMovement;
 import com.company.wms.inventory_service.dto.PutAwayCompletedEvent;
 import com.company.wms.inventory_service.repository.InventoryBalanceRepository;
 import com.company.wms.inventory_service.repository.InventoryMovementRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class InventoryProcessingService {
@@ -34,111 +35,69 @@ public class InventoryProcessingService {
     @Transactional
     public void processPutAwayCompleted(PutAwayCompletedEvent event) {
 
-        // Validate before accessing the database.
-        validateEvent(event);
+        if (event == null
+                || event.getEventId() == null
+                || event.getPayload() == null) {
+            throw new IllegalArgumentException(
+                    "PutAwayCompleted event, eventId and payload are required");
+        }
 
-        // A previously processed event must not add stock again.
+        PutAwayCompletedEvent.Payload payload = event.getPayload();
+
+        // Avoid applying the same event more than once.
         if (inventoryMovementRepository.existsByEventId(event.getEventId())) {
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now();
-
         InventoryBalance balance =
                 inventoryBalanceRepository
                         .findBySkuIdAndWarehouseIdAndBinId(
-                                event.getSkuId(),
-                                event.getWarehouseId(),
-                                event.getTargetBinId()
-                        )
-                        .orElseGet(() -> createNewBalance(event, now));
+                                payload.getSkuId(),
+                                payload.getWarehouseId(),
+                                payload.getTargetBinId())
+                        .orElseGet(() -> createNewBalance(payload));
 
-        // Update the inventory balance.
+        BigDecimal currentQuantity = balance.getAvailableQuantity();
+
         balance.setAvailableQuantity(
-                balance.getAvailableQuantity().add(event.getQuantity())
-        );
-        balance.setUpdatedAt(now);
+                currentQuantity.add(payload.getQuantity()));
+
+        balance.setUpdatedAt(LocalDateTime.now());
 
         inventoryBalanceRepository.save(balance);
 
-        // Record the corresponding stock movement.
+        // Record the stock movement for this event.
         InventoryMovement movement = new InventoryMovement();
 
         movement.setId(UUID.randomUUID());
-        movement.setSkuId(event.getSkuId());
-        movement.setWarehouseId(event.getWarehouseId());
-        movement.setBinId(event.getTargetBinId());
+        movement.setSkuId(payload.getSkuId());
+        movement.setWarehouseId(payload.getWarehouseId());
+        movement.setBinId(payload.getTargetBinId());
         movement.setMovementType("PUTAWAY");
-        movement.setQuantity(event.getQuantity());
+        movement.setQuantity(payload.getQuantity());
         movement.setReferenceType("PUTAWAY_TASK");
-        movement.setReferenceId(event.getPutAwayTaskId().toString());
+        movement.setReferenceId(payload.getPutAwayTaskId().toString());
         movement.setEventId(event.getEventId());
-        movement.setCreatedAt(now);
+        movement.setCreatedAt(LocalDateTime.now());
 
         inventoryMovementRepository.save(movement);
 
-        // Save the InventoryUpdated event in the same transaction.
+        // Publish the inventory change using the existing outbox flow.
         outboxEventService.createInventoryUpdatedEvent(event, balance);
     }
 
-    private void validateEvent(PutAwayCompletedEvent event) {
-
-        if (event == null) {
-            throw new IllegalArgumentException(
-                    "PutAwayCompleted event cannot be null");
-        }
-
-        if (event.getEventId() == null) {
-            throw new IllegalArgumentException(
-                    "Event ID is required");
-        }
-
-        if (!"PutAwayCompleted".equals(event.getEventType())) {
-            throw new IllegalArgumentException(
-                    "Invalid event type");
-        }
-
-        if (event.getEventVersion() == null
-                || event.getEventVersion() < 1) {
-            throw new IllegalArgumentException(
-                    "A valid event version is required");
-        }
-
-        if (event.getOccurredAt() == null
-                || event.getSource() == null
-                || event.getSource().isBlank()) {
-            throw new IllegalArgumentException(
-                    "Event timestamp and source are required");
-        }
-
-        if (event.getPutAwayTaskId() == null
-                || event.getSkuId() == null
-                || event.getWarehouseId() == null
-                || event.getTargetBinId() == null) {
-            throw new IllegalArgumentException(
-                    "Task, SKU, warehouse and target bin IDs are required");
-        }
-
-        if (event.getQuantity() == null
-                || event.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException(
-                    "Put-away quantity must be greater than zero");
-        }
-    }
-
     private InventoryBalance createNewBalance(
-            PutAwayCompletedEvent event,
-            LocalDateTime now) {
+            PutAwayCompletedEvent.Payload payload) {
 
         InventoryBalance balance = new InventoryBalance();
 
         balance.setId(UUID.randomUUID());
-        balance.setSkuId(event.getSkuId());
-        balance.setWarehouseId(event.getWarehouseId());
-        balance.setBinId(event.getTargetBinId());
+        balance.setSkuId(payload.getSkuId());
+        balance.setWarehouseId(payload.getWarehouseId());
+        balance.setBinId(payload.getTargetBinId());
         balance.setAvailableQuantity(BigDecimal.ZERO);
         balance.setReservedQuantity(BigDecimal.ZERO);
-        balance.setUpdatedAt(now);
+        balance.setUpdatedAt(LocalDateTime.now());
 
         return balance;
     }

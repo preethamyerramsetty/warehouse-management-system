@@ -1,7 +1,4 @@
-
 package com.company.wms.inventory_service.service;
-
-import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,10 +8,6 @@ import org.springframework.stereotype.Component;
 
 import com.company.wms.inventory_service.dto.PutAwayCompletedEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 @Component
 public class PutAwayCompletedConsumer {
@@ -39,42 +32,19 @@ public class PutAwayCompletedConsumer {
     )
     public void consume(String message) {
 
-        String correlationId = null;
-
         try {
-            
-                JsonNode envelope = objectMapper.readTree(message);
+            PutAwayCompletedEvent event =
+                    objectMapper.readValue(
+                            message,
+                            PutAwayCompletedEvent.class);
 
-                if (envelope.path("payload").isMissingNode()
-                        || envelope.path("eventId").isMissingNode()
-                        || envelope.path("entityId").isMissingNode()) {
-                    throw new IllegalArgumentException(
-                            "Invalid PutAwayCompleted event envelope");
-                }
+            if (event.getEventId() == null
+                    || event.getPayload() == null) {
+                throw new IllegalArgumentException(
+                        "PutAwayCompleted event must contain eventId and payload");
+            }
 
-                if (!"PutAwayCompleted".equals(
-                        envelope.path("eventType").asText())) {
-                    throw new IllegalArgumentException(
-                            "Unexpected event type");
-                }
-
-                PutAwayCompletedEvent event = objectMapper.treeToValue(
-                        envelope.get("payload"),
-                        PutAwayCompletedEvent.class
-                );
-
-                event.setEventId(UUID.fromString(
-                        envelope.path("eventId").asText()));
-                event.setEventType(envelope.path("eventType").asText());
-                event.setEventVersion(envelope.path("eventVersion").asInt());
-                event.setOccurredAt(LocalDateTime.parse(
-                        envelope.path("occurredAt").asText()));
-                event.setSource(envelope.path("source").asText());
-                event.setCorrelationId(
-                        envelope.path("correlationId").asText());
-
-                correlationId = event.getCorrelationId();
-
+            String correlationId = event.getCorrelationId();
 
             if (correlationId != null && !correlationId.isBlank()) {
                 MDC.put("correlationId", correlationId);
@@ -82,18 +52,16 @@ public class PutAwayCompletedConsumer {
 
             log.info(
                     "Received PutAwayCompleted event: {}",
-                    event.getEventId()
-            );
+                    event.getEventId());
 
             inventoryProcessingService.processPutAwayCompleted(event);
 
-        } catch (Exception e) {
-            log.error("Failed to process PutAwayCompleted event", e);
+        } catch (Exception exception) {
+            log.error("Failed to process PutAwayCompleted event", exception);
 
             throw new RuntimeException(
                     "Failed to process PutAwayCompleted event",
-                    e
-            );
+                    exception);
 
         } finally {
             MDC.remove("correlationId");

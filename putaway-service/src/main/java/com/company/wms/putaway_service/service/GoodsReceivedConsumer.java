@@ -16,13 +16,13 @@ import com.company.wms.putaway_service.domain.PutAwayReceiptLine;
 import com.company.wms.putaway_service.dto.GoodsReceivedEvent;
 import com.company.wms.putaway_service.repository.ProcessedEventRepository;
 import com.company.wms.putaway_service.repository.PutAwayReceiptLineRepository;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class GoodsReceivedConsumer {
 
-    private static final Logger log = LoggerFactory.getLogger(GoodsReceivedConsumer.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(GoodsReceivedConsumer.class);
 
     private final ObjectMapper objectMapper;
     private final ProcessedEventRepository processedEventRepository;
@@ -32,129 +32,90 @@ public class GoodsReceivedConsumer {
             ObjectMapper objectMapper,
             ProcessedEventRepository processedEventRepository,
             PutAwayReceiptLineRepository putAwayReceiptLineRepository) {
-
         this.objectMapper = objectMapper;
         this.processedEventRepository = processedEventRepository;
-        this.putAwayReceiptLineRepository =
-                putAwayReceiptLineRepository;
-        }
+        this.putAwayReceiptLineRepository = putAwayReceiptLineRepository;
+    }
 
-    
-        @KafkaListener(
-                topics = "goods-received",
-                groupId = "putaway-service-test"
-        )
-        @Transactional
-        public void consume(String message) {
-
-        String correlationId = null;
+    @KafkaListener(
+            topics = "goods-received",
+            groupId = "putaway-service")
+    @Transactional
+    public void consume(String message) {
 
         try {
-                
-                JsonNode envelope = objectMapper.readTree(message);
+            GoodsReceivedEvent event =
+                    objectMapper.readValue(
+                            message,
+                            GoodsReceivedEvent.class);
 
-                if (envelope.path("payload").isMissingNode()
-                        || envelope.path("eventId").isMissingNode()
-                        || envelope.path("entityId").isMissingNode()) {
+            if (event.getEventId() == null) {
                 throw new IllegalArgumentException(
-                        "Invalid GoodsReceived event envelope");
-                }
+                        "GoodsReceived event must contain eventId");
+            }
 
-                if (!"GoodsReceived".equals(
-                        envelope.path("eventType").asText())) {
+            if (event.getPayload() == null
+                    || event.getPayload().getLines() == null) {
                 throw new IllegalArgumentException(
-                        "Unexpected event type");
-                }
+                        "GoodsReceived event must contain payload and lines");
+            }
 
-                GoodsReceivedEvent event = objectMapper.treeToValue(
-                        envelope.get("payload"),
-                        GoodsReceivedEvent.class
-                );
+            String correlationId = event.getCorrelationId();
 
-                event.setEventId(UUID.fromString(
-                        envelope.path("eventId").asText()));
-                event.setEventType(envelope.path("eventType").asText());
-                event.setEventVersion(envelope.path("eventVersion").asInt());
-                event.setOccurredAt(LocalDateTime.parse(
-                        envelope.path("occurredAt").asText()));
-                event.setSource(envelope.path("source").asText());
-                event.setCorrelationId(
-                        envelope.path("correlationId").asText());
-
-                correlationId = event.getCorrelationId();
-
-
-                if (correlationId != null && !correlationId.isBlank()) {
+            if (correlationId != null && !correlationId.isBlank()) {
                 MDC.put("correlationId", correlationId);
-                }
+            }
 
-                log.info(
-                        "Received GoodsReceived event: {}",
-                        event.getEventId());
+            log.info(
+                    "Received GoodsReceived event: {}",
+                    event.getEventId());
 
-                if (processedEventRepository
-                        .existsByEventId(event.getEventId())) {
-
+            if (processedEventRepository.existsByEventId(event.getEventId())) {
                 log.info(
                         "GoodsReceived event already processed: {}",
                         event.getEventId());
-
                 return;
-                }
+            }
 
-                for (GoodsReceivedEvent.GoodsReceivedLineEvent line
-                        : event.getLines()) {
+            for (GoodsReceivedEvent.GoodsReceivedLineEvent line
+                    : event.getPayload().getLines()) {
 
-                PutAwayReceiptLine receiptLine =
-                        new PutAwayReceiptLine();
-
+                PutAwayReceiptLine receiptLine = new PutAwayReceiptLine();
                 receiptLine.setId(UUID.randomUUID());
-
                 receiptLine.setGoodsReceiptLineId(
                         line.getGoodsReceiptLineId());
-
                 receiptLine.setSkuId(line.getSkuId());
-
-                receiptLine.setWarehouseId(event.getWarehouseId());
 
                 BigDecimal receivedQuantity = line.getQuantity();
 
                 receiptLine.setReceivedQuantity(receivedQuantity);
                 receiptLine.setPutawayQuantity(BigDecimal.ZERO);
                 receiptLine.setRemainingQuantity(receivedQuantity);
-
                 receiptLine.setCreatedAt(LocalDateTime.now());
                 receiptLine.setUpdatedAt(LocalDateTime.now());
 
                 putAwayReceiptLineRepository.save(receiptLine);
-                }
+            }
 
-                ProcessedEvent processedEvent = new ProcessedEvent();
+            ProcessedEvent processedEvent = new ProcessedEvent();
+            processedEvent.setId(UUID.randomUUID());
+            processedEvent.setEventId(event.getEventId());
+            processedEvent.setEventType(event.getEventType());
+            processedEvent.setProcessedAt(LocalDateTime.now());
 
-                processedEvent.setId(UUID.randomUUID());
-                processedEvent.setEventId(event.getEventId());
-                processedEvent.setEventType(event.getEventType());
-                processedEvent.setProcessedAt(LocalDateTime.now());
+            processedEventRepository.save(processedEvent);
 
-                processedEventRepository.save(processedEvent);
-
-                log.info(
-                        "Processed GoodsReceived event: {}",
-                        event.getEventId());
+            log.info(
+                    "Processed GoodsReceived event: {}",
+                    event.getEventId());
 
         } catch (Exception exception) {
-
-                log.error(
-                        "Failed to process GoodsReceived event",
-                        exception);
-
-                throw new RuntimeException(
-                        "Failed to process GoodsReceived event",
-                        exception);
-
+            log.error("Failed to process GoodsReceived event", exception);
+            throw new RuntimeException(
+                    "Failed to process GoodsReceived event",
+                    exception);
         } finally {
-                MDC.remove("correlationId");
+            MDC.remove("correlationId");
         }
-        }
-
+    }
 }

@@ -1,2 +1,4 @@
 A:\Warehouse_Management_System\api-gateway\src\main\java\com\company\wms\apigateway\ApiGatewayApplication.java
 A:\Warehouse_Management_System\api-gateway\src\main\java\com\company\wms\apigateway\config\JwtConfig.java
+A:\Warehouse_Management_System\api-gateway\src\main\java\com\company\wms\apigateway\config\SecurityConfig.java
+A:\Warehouse_Management_System\api-gateway\src\main\java\com\company\wms\apigateway\controller\AuthController.java
